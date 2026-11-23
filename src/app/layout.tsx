@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Lato } from "next/font/google";
-import { SiteFooter } from "@/components/layout/SiteFooter";
-import { SiteHeader } from "@/components/layout/SiteHeader";
 import { institution } from "@/content/institution";
 import { createPageMetadata, defaultDescription } from "@/lib/seo/metadata";
 import "./globals.css";
@@ -44,9 +42,7 @@ export default function RootLayout({
         >
           Ir para o conteúdo principal
         </a>
-        <SiteHeader />
-        <main id="conteudo-principal">{children}</main>
-        <SiteFooter />
+        {children}
       </body>
     </html>
   );
