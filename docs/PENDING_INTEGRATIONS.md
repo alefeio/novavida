@@ -2,8 +2,10 @@
 
 ## Banco e CMS
 
-- Substituir arrays em `src/content/` por consultas reais via `src/lib/content/`.
-- Avaliar reaproveitamento seletivo de módulos do projeto Alexandre Feio (cursos, blog, admin) **após auditoria** — sem copiar layout/marca.
+- Provisionar Neon exclusivo Nova Vida (DEV/PREVIEW/PROD) — Gate B BLOCKED até lá.
+- Aplicar migration `20261123120000_init_auth_audit` somente em DEV/HOMOL autorizado.
+- Substituir arrays em `src/content/` por consultas reais via `src/lib/content/` (sprints 2.1+).
+- Avaliar reaproveitamento seletivo de módulos do projeto Alexandre Feio (cursos, blog, admin) **após auditoria** — sem copiar layout/marca/banco.
 
 ## Cursos e aulas
 
@@ -15,15 +17,17 @@
 
 ## Blog e administração
 
-- Fluxo editorial
+- Fluxo editorial (shell admin já existe; módulos ainda “em breve”)
 - Autores oficiais
 - Publicação, agendamento e revisão teológica
 - Indexação SEO após homologação
 
 ## Autenticação
 
-- Login de alunos/administradores
-- Permissões e área restrita
+- Fundação admin (Better Auth + RBAC) entregue na Sprint 2.0
+- Bootstrap do primeiro OWNER/ADMIN em ambiente controlado
+- Recuperação de senha — pendente provedor de e-mail
+- Login de alunos / matrícula — sprints futuras
 
 ## Formulários
 

@@ -31,6 +31,8 @@ export async function generateMetadata({
     description: course.summary,
     path: `/cursos/${course.slug}`,
     noIndex: true,
+    imagePath: course.image,
+    imageAlt: course.imageAlt ?? course.title,
   });
 }
 
