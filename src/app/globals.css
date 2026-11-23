@@ -146,6 +146,30 @@
   }
 }
 
+@layer components {
+  /* Escopo do hero: sobrescreve o h1 global em grafite apenas nesta seção. */
+  .hero-title {
+    color: var(--color-ivory);
+    text-shadow: 0 2px 14px rgb(12 22 17 / 55%), 0 5px 28px rgb(12 22 17 / 24%);
+  }
+
+  /* Vinheta com bordas difusas, atrás da copy; não cria um card sobre a foto. */
+  .hero-copy-support {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .hero-copy-support::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+    inset: -1.5rem -2.5rem;
+    background: radial-gradient(ellipse at 36% 47%, rgb(20 29 23 / 42%), rgb(20 29 23 / 19%) 57%, transparent 86%);
+    filter: blur(7px);
+  }
+}
+
 @layer utilities {
   .font-display {
     font-family: var(--font-cormorant), Georgia, serif;
