@@ -26,6 +26,10 @@ export const metadata: Metadata = {
     path: "/",
   }),
   applicationName: institution.shortName,
+  icons: {
+    icon: [{ url: "/brand/favicon.png", type: "image/png" }],
+    apple: [{ url: "/brand/apple-touch-icon.png" }],
+  },
 };
 
 export default function RootLayout({

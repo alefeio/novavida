@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth/roles";
 import { writeAuditLog } from "@/lib/auth/audit";
 import { isAdminDatabaseConfigured } from "@/lib/db/env";
+import { prisma } from "@/lib/db/prisma";
 
 export type AdminSessionUser = {
   id: string;
@@ -35,6 +36,10 @@ export async function getServerSession() {
   return session;
 }
 
+/**
+ * Autorização administrativa: o papel é sempre relido do banco.
+ * Papel em cache de sessão/cookie NÃO é autoridade.
+ */
 export async function requireAdminAccess(): Promise<AdminAccessResult> {
   if (!isAdminDatabaseConfigured()) {
     return { ok: false, reason: "misconfigured" };
@@ -45,15 +50,31 @@ export async function requireAdminAccess(): Promise<AdminAccessResult> {
     return { ok: false, reason: "unauthenticated" };
   }
 
-  const role = resolveServerRole(
-    (session.user as { role?: string }).role,
-  );
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, name: true, email: true, role: true },
+  });
+
+  if (!dbUser) {
+    await writeAuditLog({
+      action: "auth.access_denied",
+      actorId: session.user.id,
+      metadata: { reason: "user_missing", path: "/admin" },
+    });
+    return { ok: false, reason: "unauthenticated" };
+  }
+
+  const role = resolveServerRole(dbUser.role);
 
   if (!canAccessAdminPanel(role)) {
     await writeAuditLog({
       action: "auth.access_denied",
-      actorId: session.user.id,
-      metadata: { role, path: "/admin" },
+      actorId: dbUser.id,
+      metadata: {
+        role,
+        path: "/admin",
+        reason: "role_revoked_or_insufficient",
+      },
     });
     return { ok: false, reason: "forbidden" };
   }
@@ -61,9 +82,9 @@ export async function requireAdminAccess(): Promise<AdminAccessResult> {
   return {
     ok: true,
     user: {
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
+      id: dbUser.id,
+      name: dbUser.name,
+      email: dbUser.email,
       role,
     },
   };
@@ -71,7 +92,6 @@ export async function requireAdminAccess(): Promise<AdminAccessResult> {
 
 /**
  * Rejeita qualquer tentativa de elevar privilégios via payload do cliente.
- * Usado em actions/handlers que recebem body JSON.
  */
 export function stripClientPrivilegeFields<T extends Record<string, unknown>>(
   body: T,

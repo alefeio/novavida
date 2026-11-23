@@ -1,65 +1,57 @@
-# Sprint 2.0 — Relatório de Gates
+# Sprint 2.0 / 2.0.1 — Relatório de Gates
 
 **Branch:** `feature/sprint-2-0-foundation`  
 **Base SHA:** `03e852799a5e5700f37295c34f69483129e4870b`  
-**HEAD:** `a5ebdb8357222c160b0a7d082ab1c7e423f6127b`  
-**Data:** 2026-03-23
+**PR:** https://github.com/alefeio/novavida/pull/1 (draft)  
+**Data:** 2026-11-23  
+**HEAD:** (ver tip após commits 2.0.1)
 
 ## Gate A — Arquitetura — PASS
 
 | Critério | Estado | Evidência |
 | --- | --- | --- |
-| Prisma 7 + adapter-pg + `prisma.config.ts` | PASS | deps `7.10.1`, `prisma/schema.prisma`, `prisma.config.ts` |
-| Schema só auth + auditoria | PASS | `User`, `Session`, `Account`, `Verification`, `AuditLog`, `AdminRole` |
-| Better Auth integrado | PASS | `src/lib/auth/auth.ts`, `/api/auth/[...all]` |
-| Isolamento site público | PASS | `src/lib/content/index.ts` intacto; build público sem DB |
-| `.env.example` sem segredos | PASS | versionado |
-| UI pública preservada | PASS | rotas públicas em `(site)`; mesmas URLs; admin fora do menu |
+| Prisma 7 + adapter-pg + `prisma.config.ts` | PASS | deps `7.10.1`, schema auth/audit |
+| Better Auth + RBAC server-side | PASS | role sempre relida do banco (2.0.1) |
+| Isolamento site público | PASS | content local; build sem DB |
+| Open Graph institucional | PASS (2.0.1) | `/images/social/novavida-og.jpg` + metadata |
 
 ## Gate B — Banco — BLOCKED (migrate apply)
 
 | Critério | Estado | Evidência |
 | --- | --- | --- |
-| Banco Neon exclusivo identificado | BLOCKED | Sem `.env` / Vercel link / projeto Neon no workspace |
-| Migration SQL versionada | PASS | `prisma/migrations/20261123120000_init_auth_audit/migration.sql` |
-| Migration aplicada em DEV/HOMOL | BLOCKED | `npm run db:check` → `DATABASE_ENV ausente` |
-| Production migrate | BLOCKED (intencional) | `migrate-guard` + `assertDatabaseEnvForMigrations` |
+| Banco Neon exclusivo | BLOCKED | Sem provisionamento no workspace |
+| Identidade explícita `NV_DB_*` | PASS (código) | `db-target.ts` + `db:check` |
+| `DIRECT_URL` obrigatória | PASS (código) | sem fallback para `DATABASE_URL` |
+| Migration aplicada | BLOCKED | depende de Neon DEV |
 
-**Justificativa:** não há PostgreSQL exclusivo da Nova Vida configurado. Código e SQL prontos; aplicar somente após provisionar Neon DEV e `db:check` = PASS.
-
-## Gate C — Autenticação — PASS (código) / BLOCKED (E2E banco)
+## Gate C — Autenticação — PASS (código) / BLOCKED (E2E)
 
 | Critério | Estado | Evidência |
 | --- | --- | --- |
-| Login / logout / sessão server-side | PASS | `/admin/entrar`, Better Auth, `requireAdminAccess` |
-| RBAC ADMIN/OWNER | PASS | `roles.ts` + hook `session.create.before` |
-| Bootstrap auditado | PASS | `scripts/bootstrap-admin.ts` |
-| Cadastro público off | PASS | `disableSignUp` + bloqueio rota |
-| Teste E2E com banco real | BLOCKED | Depende do Gate B |
+| Login/logout/sessão | PASS (código) | Better Auth + `/admin` |
+| Revogação de papel | PASS (unitário) | `revocation.test.ts` |
+| Bootstrap senha sem eco | PASS (código/unit) | `secure-prompt` + testes argv |
+| E2E com banco real | BLOCKED | sem Neon |
 
-## Gate D — Homologação — PASS (local) / Preview pendente push
+## Gate D — Homologação
 
 | Critério | Estado | Evidência |
 | --- | --- | --- |
-| `npm run typecheck` | PASS | exit 0 |
-| `npm run lint` | PASS | exit 0 (sem erros) |
-| `npm run build` | PASS | exit 0; rotas públicas estáticas; `/admin` dynamic |
-| `prisma validate` | PASS | schema valid |
-| `npm test` | PASS | 20/20 |
-| Preview URL | pendente | após push da branch |
-| PR draft | pendente | após push |
+| typecheck / lint / build / test | (após 2.0.1) | ver comentário no PR |
+| Preview | pendente deploy | branch feature |
+| PR draft | #1 | sem merge |
 
-## Modelos Prisma criados
+## Hardening 2.0.1
 
-- `User` (+ `role: AdminRole`)
-- `Session`
-- `Account`
-- `Verification`
-- `AuditLog`
+- Prompt de senha sem eco (Windows/Unix TTY); argv `--password` rejeitado.
+- Pré-flight de banco com `NV_DB_OWNER/PROJECT/BRANCH/NAME` + match runtime/direct.
+- Autorização admin ignora papel em cache de sessão.
+- Auth URLs sem fallback localhost em Vercel Preview.
+- Open Graph + favicon oficiais; canônico `https://novavida-navy.vercel.app`.
 
 ## Pendências
 
-1. Provisionar Neon exclusivo Nova Vida (dev + preview).
-2. Configurar secrets Preview Vercel.
-3. `db:check` → `db:migrate` → `db:bootstrap-admin` em DEV.
-4. Validar login real e URL Preview.
+1. Provisionar Neon exclusivo Nova Vida (DEV/PREVIEW).
+2. Configurar secrets Preview (não habilitar auth Preview sem banco próprio).
+3. `db:check` → migrate → bootstrap em DEV.
+4. Validar prévia WhatsApp após deploy (cache de plataformas pode atrasar).

@@ -25,18 +25,20 @@ export function parseDatabaseEnv(
 
 /**
  * Valida presença e coerência das variáveis de banco sem revelar valores.
- * Não conecta ao banco.
+ * Não conecta ao banco. Migrations exigem DIRECT_URL explícita.
  */
 export function assertDatabaseEnvForMigrations(options?: {
   allowProduction?: boolean;
+  env?: NodeJS.ProcessEnv;
 }): {
   databaseEnv: DatabaseEnv;
   hasDatabaseUrl: boolean;
   hasDirectUrl: boolean;
 } {
-  const databaseEnv = parseDatabaseEnv(process.env.DATABASE_ENV);
-  const hasDatabaseUrl = Boolean(process.env.DATABASE_URL?.trim());
-  const hasDirectUrl = Boolean(process.env.DIRECT_URL?.trim());
+  const env = options?.env ?? process.env;
+  const databaseEnv = parseDatabaseEnv(env.DATABASE_ENV);
+  const hasDatabaseUrl = Boolean(env.DATABASE_URL?.trim());
+  const hasDirectUrl = Boolean(env.DIRECT_URL?.trim());
 
   if (!databaseEnv) {
     throw new DatabaseConfigError(
@@ -52,7 +54,7 @@ export function assertDatabaseEnvForMigrations(options?: {
 
   if (!hasDirectUrl) {
     throw new DatabaseConfigError(
-      "DIRECT_URL ausente. Configure a conexão direta do MESMO banco para migrations.",
+      "DIRECT_URL ausente. Configure a conexão direta do MESMO banco para migrations (sem fallback).",
     );
   }
 
@@ -65,18 +67,12 @@ export function assertDatabaseEnvForMigrations(options?: {
   return { databaseEnv, hasDatabaseUrl, hasDirectUrl };
 }
 
-export function isAdminDatabaseConfigured(): boolean {
+export function isAdminDatabaseConfigured(
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
   return Boolean(
-    process.env.DATABASE_URL?.trim() &&
-      process.env.BETTER_AUTH_SECRET?.trim() &&
-      parseDatabaseEnv(process.env.DATABASE_ENV),
-  );
-}
-
-export function getAuthPublicUrl(): string {
-  return (
-    process.env.BETTER_AUTH_URL?.trim() ||
-    process.env.APP_URL?.trim() ||
-    "http://localhost:3000"
+    env.DATABASE_URL?.trim() &&
+      env.BETTER_AUTH_SECRET?.trim() &&
+      parseDatabaseEnv(env.DATABASE_ENV),
   );
 }

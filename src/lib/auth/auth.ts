@@ -4,7 +4,8 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { prisma } from "@/lib/db/prisma";
-import { getAuthPublicUrl, isAdminDatabaseConfigured } from "@/lib/db/env";
+import { isAdminDatabaseConfigured } from "@/lib/db/env";
+import { getAuthPublicUrl, buildTrustedOrigins } from "@/lib/auth/urls";
 import { canAccessAdminPanel } from "@/lib/auth/roles";
 import { writeAuditLog } from "@/lib/auth/audit";
 
@@ -46,9 +47,9 @@ function createAuth() {
     session: {
       expiresIn: 60 * 60 * 8,
       updateAge: 60 * 30,
+      // Desabilitado: papel no cookie cache pode ficar obsoleto após revogação.
       cookieCache: {
-        enabled: true,
-        maxAge: 60 * 5,
+        enabled: false,
       },
     },
     trustedOrigins: buildTrustedOrigins(),
@@ -107,22 +108,3 @@ export function getAuth(): AuthInstance {
 }
 
 export type AuthSession = AuthInstance["$Infer"]["Session"];
-
-function buildTrustedOrigins(): string[] {
-  const origins = new Set<string>();
-  const candidates = [
-    process.env.BETTER_AUTH_URL,
-    process.env.APP_URL,
-    "http://localhost:3000",
-  ];
-  for (const candidate of candidates) {
-    const value = candidate?.trim();
-    if (!value) continue;
-    try {
-      origins.add(new URL(value).origin);
-    } catch {
-      // ignora URL inválida
-    }
-  }
-  return [...origins];
-}

@@ -2,12 +2,10 @@ import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
 /**
- * Prisma 7 — configuração de schema e datasource.
- * Migrations preferem DIRECT_URL (mesmo banco, conexão direta).
- * Nunca aplicar migrate em production nesta sprint.
+ * Prisma 7 — migrations usam SOMENTE DIRECT_URL (obrigatória).
+ * Sem fallback silencioso para DATABASE_URL.
  */
-const migrationUrl =
-  process.env.DIRECT_URL?.trim() || process.env.DATABASE_URL?.trim() || "";
+const directUrl = process.env.DIRECT_URL?.trim() ?? "";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -15,6 +13,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: migrationUrl,
+    // String vazia bloqueia migrate acidental sem DIRECT_URL configurada.
+    url: directUrl,
   },
 });

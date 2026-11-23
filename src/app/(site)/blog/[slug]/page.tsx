@@ -77,6 +77,8 @@ export async function generateMetadata({
     description: article.excerpt,
     path: `/blog/${article.slug}`,
     noIndex: true,
+    imagePath: article.image,
+    imageAlt: article.imageAlt ?? article.title,
   });
 }
 

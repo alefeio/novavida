@@ -18,6 +18,17 @@
 6. **Não** `migrate reset` / operações destrutivas em bancos remotos.
 7. Site público deve compilar e funcionar **sem** `DATABASE_URL`.
 
+## Identidade explícita (obrigatória para migrate/bootstrap)
+
+Além de `DATABASE_URL` / `DIRECT_URL` / `DATABASE_ENV`:
+
+- `NV_DB_OWNER=novavida`
+- `NV_DB_PROJECT` (ex.: `novavida`)
+- `NV_DB_BRANCH` (ex.: `dev`)
+- `NV_DB_NAME` (deve coincidir com o database nas URLs)
+
+`DIRECT_URL` é **obrigatória** para migrations — sem fallback silencioso para `DATABASE_URL`.
+
 ## Pré-flight
 
 ```bash
@@ -26,8 +37,8 @@ npm run db:check
 
 Estados:
 
-- `PASS` — vars presentes, ambiente development/preview, heurística anti-projeto-estrangeiro ok.
-- `BLOCKED` — vars ausentes, production, ou conexão suspeita de outro projeto.
+- `PASS` — identidade explícita, URLs coerentes, ambiente development/preview.
+- `BLOCKED` — vars ausentes, identidades inconsistentes, ou production.
 
 ## Evidência sem segredos
 

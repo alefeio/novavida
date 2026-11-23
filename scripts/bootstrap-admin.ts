@@ -1,40 +1,38 @@
 /**
  * Bootstrap controlado do primeiro OWNER/ADMIN.
  *
- * Uso (somente ambiente local/DEV com banco exclusivo):
+ * Uso (somente ambiente local/DEV com banco exclusivo confirmado):
  *   npx tsx scripts/bootstrap-admin.ts --email=... --name=... --role=OWNER
  *
- * A senha é solicitada interativamente (não passe por argv/logs).
+ * A senha é solicitada via prompt sem eco (TTY). Não passe por argv/logs.
  * Não executar em production nesta sprint.
  */
 
 import "dotenv/config";
-import { createInterface } from "node:readline/promises";
-import { stdin as input, stdout as output } from "node:process";
 import { hashPassword } from "better-auth/crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, type AdminRole } from "../src/generated/prisma";
-import { assertDatabaseEnvForMigrations } from "../src/lib/db/env-shared";
+import { assertMigrationTargetReady } from "../src/lib/db/db-target";
+import {
+  assertNoPasswordArgv,
+  promptHiddenPassword,
+} from "./lib/secure-prompt";
 
 function readArg(name: string): string | undefined {
   const prefix = `--${name}=`;
   return process.argv.find((a) => a.startsWith(prefix))?.slice(prefix.length);
 }
 
-async function promptHidden(label: string): Promise<string> {
-  const rl = createInterface({ input, output });
-  try {
-    // Nota: em Windows o eco pode permanecer; evite compartilhar a sessão.
-    const value = await rl.question(label);
-    return value.trim();
-  } finally {
-    rl.close();
-  }
-}
-
 async function main() {
-  const gate = assertDatabaseEnvForMigrations({ allowProduction: false });
-  console.log(`[bootstrap] DATABASE_ENV=${gate.databaseEnv} (urls omitidas)`);
+  assertNoPasswordArgv(process.argv);
+
+  const gate = assertMigrationTargetReady({ allowProduction: false });
+  console.log(
+    `[bootstrap] DATABASE_ENV=${gate.identity.environment} project=${gate.identity.project} branch=${gate.identity.branch} db=${gate.identity.database}`,
+  );
+  console.log(
+    `[bootstrap] runtime=${gate.runtime.hostname}/${gate.runtime.database} direct=${gate.direct.hostname}/${gate.direct.database}`,
+  );
 
   const email = readArg("email")?.trim().toLowerCase();
   const name = readArg("name")?.trim();
@@ -47,7 +45,9 @@ async function main() {
     throw new Error("Role permitido no bootstrap: OWNER ou ADMIN.");
   }
 
-  const password = await promptHidden("Senha forte (mín. 12 chars, não será ecoada nos logs): ");
+  const password = await promptHiddenPassword(
+    "Senha forte (mín. 12 chars; digitação sem eco): ",
+  );
   if (password.length < 12) {
     throw new Error("Senha deve ter pelo menos 12 caracteres.");
   }
@@ -63,12 +63,11 @@ async function main() {
     });
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser && existingAdmins > 0 && existingUser.role === "USER") {
-      // Permite promover apenas se for o fluxo explícito e ainda sem excesso de risco:
-      // nesta sprint, promoção só quando ainda não há admin OU usuário já é alvo do bootstrap.
-    }
 
-    if (existingAdmins > 0 && (!existingUser || !["ADMIN", "OWNER"].includes(existingUser.role))) {
+    if (
+      existingAdmins > 0 &&
+      (!existingUser || !["ADMIN", "OWNER"].includes(existingUser.role))
+    ) {
       throw new Error(
         "Já existe administrador. Bootstrap inicial bloqueado para evitar elevação não auditada em massa.",
       );
@@ -120,25 +119,34 @@ async function main() {
 
     await prisma.auditLog.create({
       data: {
-        action: existingUser ? "bootstrap.role_assigned" : "bootstrap.admin_created",
+        action: existingUser
+          ? "bootstrap.role_assigned"
+          : "bootstrap.admin_created",
         actorId: user.id,
         targetType: "user",
         targetId: user.id,
         metadata: {
           role: roleArg,
           emailDomain: email.split("@")[1] ?? "unknown",
-          environment: gate.databaseEnv,
+          environment: gate.identity.environment,
+          project: gate.identity.project,
+          branch: gate.identity.branch,
         },
       },
     });
 
-    console.log("[bootstrap] OK — administrador preparado (detalhes sensíveis omitidos).");
+    console.log(
+      "[bootstrap] OK — administrador preparado (detalhes sensíveis omitidos).",
+    );
   } finally {
     await prisma.$disconnect();
   }
 }
 
 main().catch((error) => {
-  console.error("[bootstrap] FALHA:", error instanceof Error ? error.message : error);
+  console.error(
+    "[bootstrap] FALHA:",
+    error instanceof Error ? error.message : error,
+  );
   process.exitCode = 1;
 });
