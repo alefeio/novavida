@@ -2,7 +2,7 @@
 
 **Branch:** `feature/sprint-2-0-foundation`  
 **Base SHA:** `03e852799a5e5700f37295c34f69483129e4870b`  
-**HEAD:** `3811a0868f778d454aff66bfa375bf98d06cbd0e`  
+**HEAD:** `a5ebdb8357222c160b0a7d082ab1c7e423f6127b`  
 **Data:** 2026-03-23
 
 ## Gate A — Arquitetura — PASS
