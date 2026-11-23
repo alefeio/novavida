@@ -1,6 +1,6 @@
 # Nova Vida — Modelo de dados v1 (proposto)
 
-**Status:** proposta de arquitetura, não uma migration aplicada.  
+**Status:** fundação auth/audit implementada na Sprint 2.0 (migration gerada, apply BLOCKED sem Neon exclusivo). Entidades editoriais seguem como blueprint.  
 **Fonte:** interfaces existentes em `src/types/content.ts` e conteúdos tipados de `src/content/`, auditados na base `03e8527`.  
 **Distinção:** o projeto ainda exibe dados `confirmed`, `demo` e `pending`; não transformar `demo` em publicação oficial.
 
